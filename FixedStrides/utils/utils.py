@@ -1,6 +1,13 @@
-from typing import List
-import math
 import re
+import time
+from typing import List
+
+DEBUG = False
+
+
+def print_d(x: str):
+    if DEBUG:
+        print(x)
 
 
 def binary_to_int(binary_num: str):
@@ -32,18 +39,20 @@ def remove_leading_zeroes(binary_str: str) -> str:
     return binary_str
 
 
-def get_cost_of_1bit_trie(nodes: List[int]):
+def get_cost_of_1bit_trie(nodes: List[int], ignore_last_level: bool = False):
     one_bit_trie_sum = 0
-    for i in range(len(nodes)):
+    num_levels = len(nodes) - 1 if ignore_last_level else len(nodes)
+    for i in range(num_levels):
         one_bit_trie_sum += 2 * nodes[i]
     return one_bit_trie_sum
 
 
-def get_cost_of_trie(nodes: List[int], strides: List[int]):
+def get_cost_of_trie(nodes: List[int], strides: List[int], ignore_last_level: bool = False):
     cost = 0
     stride_sum = 0
     num_nodes = []
-    for i in range(len(strides)):
+    num_levels = len(strides) - 1 if ignore_last_level else len(strides)
+    for i in range(num_levels):
         if stride_sum > len(nodes) - 1:
             print('Attempting to find cost at level:', stride_sum, 'when len(nodes) is: ', len(nodes))
             cost_at_curr_level = 0
@@ -90,12 +99,13 @@ def get_node_counts(prefixes: List[str]) -> List[int]:
     return Tree(prefixes).node_counts
 
 
-def get_file_lines(file_name: str) ->List[str]:
+def get_file_lines(file_name: str) -> List[str]:
     with open(file_name) as f:
         return f.readlines()
 
 
-def get_binary_prefixes_from_file(file_name: str = 'data/data-raw-table_australia_012016.txt') -> List[str]:
+def get_prefixes_from_file(file_name: str = 'data/data-raw-table_australia_012016.txt') -> List[str]:
+    start_time = time.time()
     lines = get_file_lines(file_name)
     prefixes = []
     for line in lines:
@@ -111,6 +121,25 @@ def get_binary_prefixes_from_file(file_name: str = 'data/data-raw-table_australi
             prefix = prefix[:int(split_line[6])]  # Remove trailing zeroes, leave only significant bits used for mask
             # prefix = remove_leading_zeroes(prefix)
             prefixes.append(prefix)
+    print('Read', len(prefixes), 'prefixes from file in %s seconds' % (time.time() - start_time))
     return prefixes
 
 
+def get_stats(nodes, strides, ignore_last_level: bool = False, print_results: bool = False):
+    len_nodes = len(nodes)
+    # if len_nodes != bits_covered:
+    #     print("Trie covers", len_nodes, "bits but strides:", strides, "cover", bits_covered, "bits")
+    #     return
+    one_bit_trie_sum = get_cost_of_1bit_trie(nodes, ignore_last_level)
+    cost, strides_nodes = get_cost_of_trie(nodes, strides, ignore_last_level)
+    diff = one_bit_trie_sum - cost
+    percent = (cost / one_bit_trie_sum) * 100.0
+    if print_results:
+        print('Maximum key length:', len_nodes, '\nInput strides:', strides,
+              '\nNumber of nodes at each level of 1-bit trie:', nodes,
+              '\nNumber of nodes in each level of strides trie:',
+              strides_nodes, '\nTotal number of units needed in 1 bit trie:', one_bit_trie_sum,
+              '\nTotal number of units needed in strides trie:',
+              cost, '\nSaved', diff, 'nodes')
+        print('Strides trie is: {}% the size of 1 bit trie'.format(percent))
+    return str(nodes), str(strides_nodes), cost, percent
