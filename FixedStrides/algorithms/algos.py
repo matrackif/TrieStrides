@@ -137,3 +137,53 @@ def fixed_strides_2(prefixes: List[str], k: int = None):
     strides = strides[-1::-1]  # reverse strides array
     # print('c[max_len - 1][max_len]:', c[max_len - 1][max_len])
     return strides, nodes
+
+
+# Algorithms from Efficient Construction of Pipelined Multibit-Trie Router-Tables by Kun Suk Kim & Sartaj Sahni 2007
+def greedy_cover(k, p, nodes):
+    max_len = len(nodes)
+    if k is None or k == 0:
+        k = max_len
+
+    stages = level = 0
+    while stages < k:
+        i = 1
+        while (nodes[level] * (2 ** i)) <= p and (level + i <= max_len):
+            i += 1
+        if level + i > max_len:
+            return True
+        if i == 1:
+            return False
+        level += i - 1
+        stages += 1
+
+    return False
+
+
+def binary_search_mms(k, p, nodes):
+    if greedy_cover(k, p, nodes):
+        return p
+    p *= 2
+    while not greedy_cover(k, p, nodes):
+        p *= 2
+    low = int(p / 2) + 1
+    high = p
+    p = int((low + high) / 2)
+    while low < high:
+        if greedy_cover(k, p, nodes):
+            high = p
+        else:
+            low = p + 1
+        p = int((low + high) / 2)
+    return high
+
+
+def get_max_mem_per_level(prefixes, num_levels=0):
+    nodes = get_node_counts(prefixes)
+    if num_levels is None or num_levels == 0:
+        num_levels = len(nodes)
+    # Initially p is nodes(l) ∗ 2 where level l has
+    # the max number of nodes in the 1-bit trie.
+    p = max(node_count for node_count in nodes) * 2
+    max_mem = binary_search_mms(num_levels, p, nodes)
+    print('binary_search_mms with k={} and p={} yielded max memory of: {}'.format(num_levels, p, max_mem))
