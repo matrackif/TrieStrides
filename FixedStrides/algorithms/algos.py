@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List
+from typing import List, Dict, Tuple
 
 import numpy as np
 
@@ -40,54 +40,54 @@ def get_node_counts2(prefixes: List[str]):
     print_d('P: ' + str(P) + '\nL: ' + str(L) + '\nF: ' + str(F) + '\nS: ' + str(S))
 
 
-def fixed_strides(prefixes: List[str]):
-    max_len = max(len(p) for p in prefixes)
-    k = max_len
-    c = {}
-    m = {}
-    nodes = get_node_counts(prefixes)
+# def fixed_strides(prefixes: List[str]):
+#     max_len = max(len(p) for p in prefixes)
+#     k = max_len
+#     c = {}
+#     m = {}
+#     nodes = get_node_counts(prefixes)
+#
+#     c[-1] = [0] * k
+#     for i in range(max_len):
+#         c[i] = [(2 ** (i + 1)) if j == 1 else 0 for j in range(max_len + 1)]
+#         m[i] = [-1 if j == 1 else 0 for j in range(max_len + 1)]
+#
+#     print_d('nodes: ' + str(nodes) + ' c:' + str(c) + '\n' ' m:' + str(m))
+#     for r in range(2, k + 1):
+#         for j in range(r - 1, max_len):
+#             min_j = max(m[j - 1][r], m[j][r - 1])
+#             print_d('m: ' + str(m) + 'min_j: ' + str(min_j))
+#             print_d('c: ' + str(c))
+#             min_cost = c[j][r - 1]
+#             min_l = m[j][r - 1]
+#             for z in range(min_j, j):
+#                 print_d('r: ' + str(r) + ' j: ' + str(j) + ' z: ' + str(z))
+#                 cost = c[z][j - 1] + (nodes[z + 1] * (2 ** (j - z)))
+#                 if cost < min_cost:
+#                     min_cost = cost
+#                     min_l = z
+#             c[j][r] = min_cost
+#             m[j][r] = min_l
+#     print_d('------------------------')
+#     print_d('c:' + str(c) + '\n' ' m:' + str(m))
+#     ############################################
+#
+#     strides = []
+#     levels_to_cover = max_len - 1  # cover levels 0 through "levels_to_cover" (levels_to_cover + 1 = max_len)
+#     tmp = 0
+#     while levels_to_cover >= 0:
+#         min_m = m[levels_to_cover][levels_to_cover + 1]
+#         tmp += c[levels_to_cover][levels_to_cover + 1]
+#         stride = levels_to_cover - min_m
+#         levels_to_cover -= stride
+#         strides.append(stride)
+#
+#     strides = strides[-1::-1]  # reverse strides array
+#     # print('c[max_len - 1][max_len]:', c[max_len - 1][max_len])
+#     return strides, nodes
 
-    c[-1] = [0] * k
-    for i in range(max_len):
-        c[i] = [(2 ** (i + 1)) if j == 1 else 0 for j in range(max_len + 1)]
-        m[i] = [-1 if j == 1 else 0 for j in range(max_len + 1)]
 
-    print_d('nodes: ' + str(nodes) + ' c:' + str(c) + '\n' ' m:' + str(m))
-    for r in range(2, k + 1):
-        for j in range(r - 1, max_len):
-            min_j = max(m[j - 1][r], m[j][r - 1])
-            print_d('m: ' + str(m) + 'min_j: ' + str(min_j))
-            print_d('c: ' + str(c))
-            min_cost = c[j][r - 1]
-            min_l = m[j][r - 1]
-            for z in range(min_j, j):
-                print_d('r: ' + str(r) + ' j: ' + str(j) + ' z: ' + str(z))
-                cost = c[z][j - 1] + (nodes[z + 1] * (2 ** (j - z)))
-                if cost < min_cost:
-                    min_cost = cost
-                    min_l = z
-            c[j][r] = min_cost
-            m[j][r] = min_l
-    print_d('------------------------')
-    print_d('c:' + str(c) + '\n' ' m:' + str(m))
-    ############################################
-
-    strides = []
-    levels_to_cover = max_len - 1  # cover levels 0 through "levels_to_cover" (levels_to_cover + 1 = max_len)
-    tmp = 0
-    while levels_to_cover >= 0:
-        min_m = m[levels_to_cover][levels_to_cover + 1]
-        tmp += c[levels_to_cover][levels_to_cover + 1]
-        stride = levels_to_cover - min_m
-        levels_to_cover -= stride
-        strides.append(stride)
-
-    strides = strides[-1::-1]  # reverse strides array
-    # print('c[max_len - 1][max_len]:', c[max_len - 1][max_len])
-    return strides, nodes
-
-
-def fixed_strides_2(prefixes: List[str], k: int = None):
+def fixed_strides(prefixes: List[str], k: int = None):
     max_len = max(len(p) for p in prefixes)
     # k = max_len
     c = {}
@@ -178,12 +178,72 @@ def binary_search_mms(k, p, nodes):
     return high
 
 
-def get_max_mem_per_level(prefixes, num_levels=0):
-    nodes = get_node_counts(prefixes)
-    if num_levels is None or num_levels == 0:
-        num_levels = len(nodes)
+def get_max_mem_per_level(nodes: List[int], num_levels=0):
     # Initially p is nodes(l) ∗ 2 where level l has
     # the max number of nodes in the 1-bit trie.
     p = max(node_count for node_count in nodes) * 2
     max_mem = binary_search_mms(num_levels, p, nodes)
     print('binary_search_mms with k={} and p={} yielded max memory of: {}'.format(num_levels, p, max_mem))
+    return max_mem
+
+
+def init_fixed_strides_2_dicts(c: Dict[Tuple, int], m: Dict[Tuple, int], max_lvls: int):
+    for i in range(max_lvls):
+        for j in range(max_lvls):
+            for r in range(1, max_lvls + 1):
+                if (j - i + 1) >= r:
+                    c[i, j, r] = 0
+                    m[i, j, r] = 0
+
+
+def fixed_strides_2_impl(c: Dict[Tuple, int], m: Dict[Tuple, int], s: int, f: int, num_levels: int, max_mem_per_lvl: int, nodes: List[int]):
+    INF = np.iinfo(np.uint32).max
+    for j in range(s, f + 1):
+        c[s, j, 1] = nodes[s] * (2 ** (j - s + 1))
+        if c[s, j, 1] > max_mem_per_lvl:
+            c[s, j, 1] = INF
+        m[s, j, 1] = s - 1
+
+    for r in range(2, num_levels + 1):
+        for j in range(s + r - 1, f + 1):
+            min_cost = INF
+            min_l = INF
+            for z in range(j - 1, s + r - 3, -1):
+                cost = None
+                if nodes[z + 1] * (2 ** (j - z)) <= max_mem_per_lvl:
+                    cost = c[s, z, r - 1] + nodes[z + 1] * (2 ** (j - z))
+                else:
+                    break
+                if cost < min_cost:
+                    min_cost = cost
+                    min_l = z
+            c[s, j, r] = min_cost
+            m[s, j, r] = min_l
+
+
+# Algorithms from Efficient Construction of Pipelined Multibit-Trie Router-Tables by Kun Suk Kim & Sartaj Sahni 2007
+def fixed_strides_2(prefixes: List[str], num_levels: int = 0):
+
+    nodes = get_node_counts(prefixes)
+    if num_levels is None or num_levels == 0:
+        num_levels = len(nodes)
+    max_len = len(nodes)
+    max_mem_per_lvl = get_max_mem_per_level(nodes, num_levels)
+    c = dict()
+    m = dict()
+    init_fixed_strides_2_dicts(c, m, max_len)
+    fixed_strides_2_impl(c, m, 0, max_len - 1, num_levels, max_mem_per_lvl, nodes)
+
+    strides = []
+    levels_to_cover = max_len - 1  # cover levels 0 through "levels_to_cover" (levels_to_cover + 1 = max_len)
+    tmp_k = num_levels
+    while levels_to_cover >= 0:
+        min_m = m[0, levels_to_cover, tmp_k]
+        # tmp += c[levels_to_cover][levels_to_cover + 1]
+        stride = levels_to_cover - min_m
+        tmp_k -= 1
+        levels_to_cover -= stride
+        strides.append(stride)
+
+    strides = strides[-1::-1]  # reverse strides array
+    return strides, nodes

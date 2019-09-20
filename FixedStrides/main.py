@@ -10,13 +10,20 @@ import utils.utils as utils
 
 def run_algo(prefixes: List[str]):
     start_time = time.time()
-
-    strides, nodes = algos.fixed_strides_2(prefixes)
+    strides, nodes = algos.fixed_strides(prefixes)
     end_time = time.time() - start_time
     print('Strides: %s ' % strides)
     print(
         'Fixed strides algorithm completed in %s seconds. R-Trie covers %s bits' % (end_time, np.sum(strides)))
     utils.get_stats(nodes, strides, False, True)
+
+
+def run_algo_2(prefixes: List[str], num_levels: int = 0):
+    start_time = time.time()
+    strides, nodes = algos.fixed_strides_2(prefixes, num_levels)
+    end_time = time.time() - start_time
+    print(
+        'Fixed strides algorithm completed in %s seconds. R-Trie covers %s bits' % (end_time, np.sum(strides)))
 
 
 if __name__ == '__main__':
@@ -49,4 +56,4 @@ if __name__ == '__main__':
     example_from_second_doc = ['0', '11', '110', '1110', '11000', '11111', '1101010']
     # prefixes = utils.get_prefixes_from_file(file_name=args['file'])
     run_algo(example_from_second_doc)
-    algos.get_max_mem_per_level(example_from_second_doc)
+    run_algo_2(example_from_second_doc, 4)
