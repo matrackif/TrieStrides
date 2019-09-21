@@ -22,8 +22,10 @@ def run_algo_2(prefixes: List[str], num_levels: int = 0):
     start_time = time.time()
     strides, nodes = algos.fixed_strides_2(prefixes, num_levels)
     end_time = time.time() - start_time
+    print('Pipelined strides: %s ' % strides)
     print(
-        'Fixed strides algorithm completed in %s seconds. R-Trie covers %s bits' % (end_time, np.sum(strides)))
+        'Pipelined fixed strides algorithm completed in %s seconds. R-Trie covers %s bits' % (end_time, np.sum(strides)))
+    utils.get_stats(nodes, strides, False, True)
 
 
 if __name__ == '__main__':
@@ -54,6 +56,6 @@ if __name__ == '__main__':
     # example_from_doc = ['00', '01', '10', '11', '11100', '11101', '11110', '11111', '11001', '10000', '10001', '1000001', '1000000']
     dense_tree_at_very_end = ['00000000', '00000001', '00000010', '00000011', '00000100', '00000101', '00000110', '00000111', '10', '11']
     example_from_second_doc = ['0', '11', '110', '1110', '11000', '11111', '1101010']
-    # prefixes = utils.get_prefixes_from_file(file_name=args['file'])
-    run_algo(example_from_second_doc)
-    run_algo_2(example_from_second_doc, 4)
+    prefixes = utils.get_prefixes_from_file(file_name=args['file'])
+    run_algo(prefixes)
+    run_algo_2(prefixes)

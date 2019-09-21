@@ -138,7 +138,8 @@ def get_stats(nodes, strides, ignore_last_level: bool = False, print_results: bo
         print('Maximum key length:', len_nodes, '\nInput strides:', strides,
               '\nNumber of nodes at each level of 1-bit trie:', nodes,
               '\nNumber of nodes in each level of strides trie:',
-              strides_nodes, '\nTotal number of units needed in 1 bit trie:', one_bit_trie_sum,
+              strides_nodes, '\nMax number of nodes at level:', max(strides_nodes),
+              '\nTotal number of units needed in 1 bit trie:', one_bit_trie_sum,
               '\nTotal number of units needed in strides trie:',
               cost, '\nSaved', diff, 'nodes')
         print('Strides trie is: {}% the size of 1 bit trie'.format(percent))

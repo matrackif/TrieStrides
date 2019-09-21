@@ -225,8 +225,10 @@ def fixed_strides_2_impl(c: Dict[Tuple, int], m: Dict[Tuple, int], s: int, f: in
 def fixed_strides_2(prefixes: List[str], num_levels: int = 0):
 
     nodes = get_node_counts(prefixes)
+    find_min_cost_tree = False
     if num_levels is None or num_levels == 0:
         num_levels = len(nodes)
+        find_min_cost_tree = True
     max_len = len(nodes)
     max_mem_per_lvl = get_max_mem_per_level(nodes, num_levels)
     c = dict()
@@ -237,6 +239,16 @@ def fixed_strides_2(prefixes: List[str], num_levels: int = 0):
     strides = []
     levels_to_cover = max_len - 1  # cover levels 0 through "levels_to_cover" (levels_to_cover + 1 = max_len)
     tmp_k = num_levels
+    # If finding minimal pipelined tree, then find how many levels gives us the smallest cost of tree
+    if find_min_cost_tree:
+        min = c[0, max_len - 1, 1]
+        min_lvl = 1
+        for i in range(2, max_len):
+            if c[0, max_len - 1, i] < min:
+                min = c[0, max_len - 1, i]
+                min_lvl = i
+        tmp_k = min_lvl
+
     while levels_to_cover >= 0:
         min_m = m[0, levels_to_cover, tmp_k]
         # tmp += c[levels_to_cover][levels_to_cover + 1]
