@@ -54,8 +54,16 @@ if __name__ == '__main__':
     brute_force(example_from_doc)
     """
     # example_from_doc = ['00', '01', '10', '11', '11100', '11101', '11110', '11111', '11001', '10000', '10001', '1000001', '1000000']
-    dense_tree_at_very_end = ['00000000', '00000001', '00000010', '00000011', '00000100', '00000101', '00000110', '00000111', '10', '11']
+    dense_tree_at_very_end = ['00000000', '00000001', '00000010', '00000011', '00000100', '00000101', '00000110', '00000111']
     example_from_second_doc = ['0', '11', '110', '1110', '11000', '11111', '1101010']
+    equal_num_of_equal_len_prefixes = ['0', '1', '01', '00', '010', '111']
+    test = ['0', '1', '01', '00','01', '00','01', '00', '010', '111']
+    test_2 = ['0', '0', '0', '0', '11', '11', '11', '11', '111', '111', '111', '111']
+    algos.distribute_prefixes(equal_num_of_equal_len_prefixes, 3)
+    algos.distribute_prefixes(test, 3)
+    algos.distribute_prefixes(test_2, 3)
+    algos.distribute_prefixes(dense_tree_at_very_end, 5)
     prefixes = utils.get_prefixes_from_file(file_name=args['file'])
-    run_algo(prefixes)
-    run_algo_2(prefixes)
+    algos.distribute_prefixes(prefixes, 5)
+    # run_algo(prefixes)
+    # run_algo_2(prefixes)

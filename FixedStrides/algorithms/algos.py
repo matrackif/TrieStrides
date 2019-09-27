@@ -259,3 +259,46 @@ def fixed_strides_2(prefixes: List[str], num_levels: int = 0):
 
     strides = strides[-1::-1]  # reverse strides array
     return strides, nodes
+
+
+# Algorithm that seeks to store equal number of keys at each level of the multi-bit tree
+# Finds the strides giving such a tree
+# Takes into account the distribution of prefix lengths
+# TODO assert all prefixes are unique?
+def distribute_prefixes(prefixes: List[str], num_levels: int):
+    lengths = get_lengths(prefixes)
+    lengths_cum_sum = [0] * len(lengths)
+    for i in range(len(lengths)):
+        if i == 0:
+            lengths_cum_sum[i] = lengths[i]
+        else:
+            lengths_cum_sum[i] = lengths[i] + lengths_cum_sum[i - 1]
+    max_len = len(lengths)
+    num_prefixes = len(prefixes)
+    if num_levels > max_len:
+        raise Exception("Number of levels: {} is greater than max length of prefixes: {}".format(num_levels, max_len))
+    num_prefixes_per_lvl = int(num_prefixes / num_levels)
+    remainder = num_prefixes % num_levels
+    prefixes_per_lvl = [num_prefixes_per_lvl + 1 if i < remainder else num_prefixes_per_lvl for i in range(num_levels)]
+    intervals = []
+
+    i, interval_begin = 0, 0
+    prefixes_covered_idx = 0
+    prefixes_covered = prefixes_per_lvl[prefixes_covered_idx]
+    while i < max_len:
+        while lengths_cum_sum[i] >= prefixes_covered:
+            intervals.append((interval_begin, i))
+            # Distinguish the case where we cover the interval exactly with no prefixes left over
+            # Then we will have non-overlapping intervals
+            interval_begin = i + 1 if lengths_cum_sum[i] == prefixes_covered else i
+            if prefixes_covered >= num_prefixes:
+                break
+            prefixes_covered_idx += 1
+            prefixes_covered += prefixes_per_lvl[prefixes_covered_idx]
+        i += 1
+    print('distribute_prefixes() found intervals:', intervals)
+    # TODO resolve overlapping intervals by making all intervals disjoint
+    # TODO In regions of overlapping intervals, make sure to give priority to interval covering most prefixes
+    strides = []
+    return strides
+

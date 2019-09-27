@@ -144,3 +144,13 @@ def get_stats(nodes, strides, ignore_last_level: bool = False, print_results: bo
               cost, '\nSaved', diff, 'nodes')
         print('Strides trie is: {}% the size of 1 bit trie'.format(percent))
     return str(nodes), str(strides_nodes), cost, percent
+
+
+def get_lengths(prefixes: List[str]):
+    lengths = []
+    for p in prefixes:
+        len_p = len(p)
+        if len_p > len(lengths):
+            lengths.extend([0] * (len_p - len(lengths)))
+        lengths[len_p - 1] += 1
+    return lengths
