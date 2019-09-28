@@ -30,7 +30,7 @@ def run_algo_2(prefixes: List[str], num_levels: int = 0):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--file', nargs='?', type=str, default='data/data-raw-table_australia_012016.txt',
+    parser.add_argument('-f', '--file', nargs='?', type=str, default='data/data-raw-table_tokyo_012016.txt',
                         const='data/data-raw-table_australia_012016.txt', help='Path to IP prefix file')
     args = vars(parser.parse_args())
     """
@@ -59,11 +59,14 @@ if __name__ == '__main__':
     equal_num_of_equal_len_prefixes = ['0', '1', '01', '00', '010', '111']
     test = ['0', '1', '01', '00','01', '00','01', '00', '010', '111']
     test_2 = ['0', '0', '0', '0', '11', '11', '11', '11', '111', '111', '111', '111']
-    algos.distribute_prefixes(equal_num_of_equal_len_prefixes, 3)
-    algos.distribute_prefixes(test, 3)
-    algos.distribute_prefixes(test_2, 3)
-    algos.distribute_prefixes(dense_tree_at_very_end, 5)
+    # algos.distribute_prefixes(equal_num_of_equal_len_prefixes, 3)
+    # algos.distribute_prefixes(test, 3)
+    # algos.distribute_prefixes(test_2, 3)
+    # algos.distribute_prefixes(dense_tree_at_very_end, 5)
     prefixes = utils.get_prefixes_from_file(file_name=args['file'])
-    algos.distribute_prefixes(prefixes, 5)
+    # algos.distribute_prefixes(prefixes, 4)
+    # TODO infinite loop with bottom example
+    # algos.dist_2(dense_tree_at_very_end, 5)
+    algos.dist_2(prefixes, 4)
     # run_algo(prefixes)
     # run_algo_2(prefixes)
