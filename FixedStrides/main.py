@@ -28,6 +28,17 @@ def run_algo_2(prefixes: List[str], num_levels: int = 0):
     utils.get_stats(nodes, strides, False, True)
 
 
+def run_algo_3(prefixes: List[str], num_levels: int = 0):
+    start_time = time.time()
+    strides = algos.equal_level_strides(prefixes, num_levels)
+    end_time = time.time() - start_time
+    print('Pipelined strides: %s ' % strides)
+    print(
+        'Equally distributed level strides algorithm completed in %s seconds. R-Trie covers %s bits' % (end_time, np.sum(strides)))
+    nodes = utils.get_node_counts(prefixes)
+    utils.get_stats(nodes, strides, False, True)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', nargs='?', type=str, default='data/data-raw-table_tokyo_012016.txt',
@@ -54,19 +65,16 @@ if __name__ == '__main__':
     brute_force(example_from_doc)
     """
     # example_from_doc = ['00', '01', '10', '11', '11100', '11101', '11110', '11111', '11001', '10000', '10001', '1000001', '1000000']
-    dense_tree_at_very_end = ['00000000', '00000001', '00000010', '00000011', '00000100', '00000101', '00000110', '00000111']
-    example_from_second_doc = ['0', '11', '110', '1110', '11000', '11111', '1101010']
-    equal_num_of_equal_len_prefixes = ['0', '1', '01', '00', '010', '111']
-    test = ['0', '1', '01', '00','01', '00','01', '00', '010', '111']
-    test_2 = ['0', '0', '0', '0', '11', '11', '11', '11', '111', '111', '111', '111']
-    # algos.distribute_prefixes(equal_num_of_equal_len_prefixes, 3)
-    # algos.distribute_prefixes(test, 3)
-    # algos.distribute_prefixes(test_2, 3)
-    # algos.distribute_prefixes(dense_tree_at_very_end, 5)
+    # dense_tree_at_very_end = ['00000000', '00000001', '00000010', '00000011', '00000100', '00000101', '00000110', '00000111']
+    # example_from_second_doc = ['0', '11', '110', '1110', '11000', '11111', '1101010']
+    # equal_num_of_equal_len_prefixes = ['0', '1', '01', '00', '010', '111']
+    # test = ['0', '1', '01', '00','01', '00','01', '00', '010', '111']
+    # test_2 = ['0', '0', '0', '0', '11', '11', '11', '11', '111', '111', '111', '111']
+    # run_algo_3(['1', '1', '1', '1', '1', '1', '1', '11111111'], 4)
     prefixes = utils.get_prefixes_from_file(file_name=args['file'])
-    # algos.distribute_prefixes(prefixes, 4)
-    # TODO infinite loop with bottom example
-    # algos.dist_2(dense_tree_at_very_end, 5)
-    algos.dist_2(prefixes, 4)
+    for i in range(2, 12):
+        run_algo_3(prefixes, i)
+
+    # algos.equal_level_strides(prefixes, 4)
     # run_algo(prefixes)
     # run_algo_2(prefixes)

@@ -296,38 +296,30 @@ def distribute_prefixes(prefixes: List[str], num_levels: int):
             prefixes_covered_idx += 1
             prefixes_covered += prefixes_per_lvl[prefixes_covered_idx]
         i += 1
-    print('distribute_prefixes() found intervals:', intervals)
-    # TODO resolve overlapping intervals by making all intervals disjoint
-    # TODO In regions of overlapping intervals, make sure to give priority to interval covering most prefixes
-    # for i in range(len(intervals) - 1):
-    #     if intervals[i][1] == intervals[i + 1][0]:
-    #         # Overlapping interval
-    #         if intervals[i + 1][0] == intervals[i + 1][1]:
-    #             # interval covering the most possible prefixes within this length
-    #             # Shift all previous intervals 1 to the left or
-    #             for j in range(i, 0, -1):
-    #                 intervals[j] = (intervals[j][0] - 1, intervals[j][1] - 1)
-    #             intervals[0] = (0, intervals[0][1] - 1)
+    # print('distribute_prefixes() found intervals:', intervals)
     strides = []
     return strides
 
 
-def dist_2(prefixes: List[str], num_levels: int):
+def equal_level_strides(prefixes: List[str], num_levels: int):
     lengths = get_lengths(prefixes)
     lengths_cpy = deepcopy(lengths)
-    lengths_cum_sum = [0] * len(lengths)
-    for i in range(len(lengths)):
-        if i == 0:
-            lengths_cum_sum[i] = lengths[i]
-        else:
-            lengths_cum_sum[i] = lengths[i] + lengths_cum_sum[i - 1]
     max_len = len(lengths)
+
     num_prefixes = len(prefixes)
     if num_levels > max_len:
         raise Exception("Number of levels: {} is greater than max length of prefixes: {}".format(num_levels, max_len))
+    elif num_levels == 0:
+        raise Exception("Numbers of levels cannot be 0")
     num_prefixes_per_lvl = int(num_prefixes / num_levels)
     remainder = num_prefixes % num_levels
     prefixes_per_lvl = [num_prefixes_per_lvl + 1 if i < remainder else num_prefixes_per_lvl for i in range(num_levels)]
+
+    # Handle some edge cases
+    if num_levels == max_len:
+        return [1] * max_len
+    elif num_levels == 1:
+        return [max_len]
 
     intervals = []
     i, interval_begin = 0, 0
@@ -336,13 +328,37 @@ def dist_2(prefixes: List[str], num_levels: int):
     # prefixes_covered = 0
     prefixes_remaining = prefixes_to_cover
     while i < max_len:
+        # handle case where all of remaining prefixes will have the same length
+        num_prefixes_in_remaining_levels = 0
+        for j in range(prefixes_covered_idx, len(prefixes_per_lvl)):
+            num_prefixes_in_remaining_levels += prefixes_per_lvl[prefixes_covered_idx]
+        if num_prefixes_in_remaining_levels == lengths_cpy[i] and prefixes_covered_idx < len(prefixes_per_lvl) - 1:
+            lengths_cpy[0] += lengths_cpy[1]
+            for k in range(1, i):
+                if k == i - 1:
+                    lengths_cpy[k] = 0
+                    break
+                lengths_cpy[k] = lengths_cpy[k + 1]
+
         if lengths_cpy[i] > prefixes_remaining:
-            half_of_lengths = lengths_cpy[i] / 2
+            half_of_lengths = int(lengths_cpy[i] / 2)
             # TODO handle edge cases when we can't shift to right or left
             if prefixes_remaining <= half_of_lengths:
-                # Shift remaining to left:
-                lengths_cpy[i] -= prefixes_remaining
-                lengths_cpy[i - 1] += prefixes_remaining
+                if i == 0:
+                    tmp_sum = lengths_cpy[0] - prefixes_remaining
+                    sum = 0
+                    num_lvls = 0
+                    j = 1
+                    while sum < tmp_sum:
+                        sum += prefixes_per_lvl[j]
+                        num_lvls += 1
+                        j += 1
+                    lengths_cpy[num_levels - 2] += tmp_sum
+                    lengths_cpy[0] = prefixes_remaining
+                else:
+                    # Shift remaining to left:
+                    lengths_cpy[i] -= prefixes_remaining
+                    lengths_cpy[i - 1] += prefixes_remaining
             else:
                 # Shift remaining to right:
                 lengths_cpy[i] -= prefixes_remaining
@@ -351,10 +367,8 @@ def dist_2(prefixes: List[str], num_levels: int):
             i, interval_begin = 0, 0
             prefixes_covered_idx = 0
             prefixes_to_cover = prefixes_per_lvl[prefixes_covered_idx]
-            # prefixes_covered = 0
             prefixes_remaining = prefixes_to_cover
             continue
-        # prefixes_covered += lengths_cpy[i]
         prefixes_remaining -= lengths_cpy[i]
         if prefixes_remaining == 0:
             intervals.append((interval_begin, i))
@@ -365,4 +379,7 @@ def dist_2(prefixes: List[str], num_levels: int):
             prefixes_remaining = prefixes_to_cover
             interval_begin = i + 1
         i += 1
-    print("intervals:", intervals)
+    strides = []
+    for interval in intervals:
+        strides.append(interval[1] - interval[0] + 1)
+    return strides
