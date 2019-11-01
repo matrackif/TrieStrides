@@ -1,9 +1,9 @@
 import re
 import time
+import random
 from typing import List
 
 DEBUG = False
-
 
 def print_d(x: str):
     if DEBUG:
@@ -154,3 +154,55 @@ def get_lengths(prefixes: List[str]):
             lengths.extend([0] * (len_p - len(lengths)))
         lengths[len_p - 1] += 1
     return lengths
+
+
+# class RandomWrapper:
+#     seed_internal = 0
+#
+#     @staticmethod
+#     def init(self, seed=0):
+#         seed_internal = seed
+#         random.seed(seed_internal)
+#
+#     @staticmethod
+#     def generate_random_int(begin: int, end: int):
+#         assert(begin <= end)
+#         return random.randint(begin, end)
+
+
+class ConfigurationGenerator(random.Random):
+
+    def __init__(self, seed=0, max_num_lvls=1):
+        super().__init__(seed)
+        self.seed = seed
+        self.max_num_lvls = max_num_lvls
+        self.configs = {}
+
+    def gen_config(self, num_levels: int):
+        if num_levels == 1:
+            return [self.max_num_lvls]
+        elif num_levels == self.max_num_lvls:
+            return [1] * self.max_num_lvls
+
+        config = []
+        levels_remaining = num_levels - 1
+        end_range = self.max_num_lvls - levels_remaining
+        bits_to_cover = self.max_num_lvls
+        while levels_remaining > 0:
+            stride = super().randint(1, end_range)
+            config.append(stride)
+            bits_to_cover -= stride
+            levels_remaining -= 1
+            end_range = bits_to_cover - levels_remaining
+        return config
+
+    def gen_configs(self, min_num_levels: int, max_num_levels: int, num_configs_per_level: int):
+        for i in range(min_num_levels, max_num_levels + 1):
+            self.configs[i] = []
+            for j in range(num_configs_per_level):
+                self.configs[i].append(self.gen_config(i))
+
+# TODO spread out the config to prevent all ones at the end
+c = ConfigurationGenerator(seed=0, max_num_lvls=32)
+c.gen_configs(4, 10, 5)
+print(c.configs)
