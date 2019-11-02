@@ -1,6 +1,7 @@
 import re
 import time
 import random
+import json
 from typing import List
 
 DEBUG = False
@@ -156,53 +157,76 @@ def get_lengths(prefixes: List[str]):
     return lengths
 
 
-# class RandomWrapper:
-#     seed_internal = 0
-#
-#     @staticmethod
-#     def init(self, seed=0):
-#         seed_internal = seed
-#         random.seed(seed_internal)
-#
-#     @staticmethod
-#     def generate_random_int(begin: int, end: int):
-#         assert(begin <= end)
-#         return random.randint(begin, end)
-
-
 class ConfigurationGenerator(random.Random):
 
-    def __init__(self, seed=0, max_num_lvls=1):
-        super().__init__(seed)
-        self.seed = seed
-        self.max_num_lvls = max_num_lvls
+    def __init__(self, seed_val=0, max_len=1):
+        # Using the name seed_value, in order for it not to be confused with the seed() method in Random class
+        super().__init__(seed_val)
+        self.seed_value = seed_val
+        self.max_len = max_len
         self.configs = {}
 
     def gen_config(self, num_levels: int):
         if num_levels == 1:
-            return [self.max_num_lvls]
-        elif num_levels == self.max_num_lvls:
-            return [1] * self.max_num_lvls
+            return [self.max_len]
+        elif num_levels == self.max_len:
+            return [1] * self.max_len
 
         config = []
-        levels_remaining = num_levels - 1
-        end_range = self.max_num_lvls - levels_remaining
-        bits_to_cover = self.max_num_lvls
+        levels_remaining = num_levels
+        end_range = self.max_len - levels_remaining + 1
+        # The intervals for possible stride values get smaller and smaller
+        # This often means that the end of the configuration is full of smaller numbers
+        # In order to mitigate this effect, we randomize the interval we choose the random number from
+        end_range = self.randint(1, end_range)
+        bits_to_cover = self.max_len
         while levels_remaining > 0:
-            stride = super().randint(1, end_range)
+            stride = 0
+            if levels_remaining > 1:
+                stride = super().randint(1, end_range)
+            elif levels_remaining == 1:
+                stride = end_range
             config.append(stride)
             bits_to_cover -= stride
             levels_remaining -= 1
-            end_range = bits_to_cover - levels_remaining
+            end_range = bits_to_cover - levels_remaining + 1
+            end_range = self.randint(1, end_range)
         return config
 
-    def gen_configs(self, min_num_levels: int, max_num_levels: int, num_configs_per_level: int):
-        for i in range(min_num_levels, max_num_levels + 1):
-            self.configs[i] = []
-            for j in range(num_configs_per_level):
-                self.configs[i].append(self.gen_config(i))
+    def gen_unique_config(self, num_levels: int, num_configs_per_level: int):
+            if num_levels not in self.configs.keys():
+                self.configs[num_levels] = []
+            for _ in range(num_configs_per_level):
+                attempts = 0
+                config = self.gen_config(num_levels)
+                while config in self.configs[num_levels] and attempts < num_configs_per_level:
+                    config = self.gen_config(num_levels)
+                    attempts += 1
+                if attempts < num_configs_per_level:
+                    self.configs[num_levels].append(config)
 
-# TODO spread out the config to prevent all ones at the end
-c = ConfigurationGenerator(seed=0, max_num_lvls=32)
-c.gen_configs(4, 10, 5)
-print(c.configs)
+    def gen_configs(self, min_num_levels: int, max_num_levels: int, num_configs_per_level: int):
+        self.configs = {}
+        for i in range(min_num_levels, max_num_levels + 1):
+            self.gen_unique_config(i, num_configs_per_level)
+        return self.configs
+
+
+def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: int = 3, max_num_levels: int = 10, num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0):
+    # TODO spread out the config to prevent all ones at the end
+    json_as_dict = {"benchmark": "ip",
+                    "resultFile": "ip32_random_results.csv",
+                    "dictionaries": "./../../data/ip/",
+                    "deviceId": 0,
+                    "comment": "Random Configs Generated in Python"}
+
+    c = ConfigurationGenerator(seed_val=seed, max_len=max_len)
+    configs = c.gen_configs(min_num_levels, max_num_levels, num_configs_per_level)
+    configs_as_list_of_lists = []
+    for num_strides in configs.keys():
+        for config in configs[num_strides]:
+            configs_as_list_of_lists.append(config)
+    json_as_dict["configs"] = configs_as_list_of_lists
+
+    with open(filename, 'w') as f:
+        json.dump(json_as_dict, f)
