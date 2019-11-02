@@ -1,10 +1,11 @@
+import json
+import random
 import re
 import time
-import random
-import json
 from typing import List
 
 DEBUG = False
+
 
 def print_d(x: str):
     if DEBUG:
@@ -194,16 +195,16 @@ class ConfigurationGenerator(random.Random):
         return config
 
     def gen_unique_config(self, num_levels: int, num_configs_per_level: int):
-            if num_levels not in self.configs.keys():
-                self.configs[num_levels] = []
-            for _ in range(num_configs_per_level):
-                attempts = 0
+        if num_levels not in self.configs.keys():
+            self.configs[num_levels] = []
+        for _ in range(num_configs_per_level):
+            attempts = 0
+            config = self.gen_config(num_levels)
+            while config in self.configs[num_levels] and attempts < num_configs_per_level:
                 config = self.gen_config(num_levels)
-                while config in self.configs[num_levels] and attempts < num_configs_per_level:
-                    config = self.gen_config(num_levels)
-                    attempts += 1
-                if attempts < num_configs_per_level:
-                    self.configs[num_levels].append(config)
+                attempts += 1
+            if attempts < num_configs_per_level:
+                self.configs[num_levels].append(config)
 
     def gen_configs(self, min_num_levels: int, max_num_levels: int, num_configs_per_level: int):
         self.configs = {}
@@ -212,7 +213,8 @@ class ConfigurationGenerator(random.Random):
         return self.configs
 
 
-def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: int = 3, max_num_levels: int = 10, num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0):
+def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: int = 3, max_num_levels: int = 10,
+                           num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0):
     # TODO spread out the config to prevent all ones at the end
     json_as_dict = {"benchmark": "ip",
                     "resultFile": "ip32_random_results.csv",
