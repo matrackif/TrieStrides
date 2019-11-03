@@ -160,18 +160,23 @@ def get_lengths(prefixes: List[str]):
 
 class ConfigurationGenerator(random.Random):
 
-    def __init__(self, seed_val=0, max_len=1):
+    def __init__(self, seed_val=0, max_len=32, max_stride_val: int = 22):
         # Using the name seed_value, in order for it not to be confused with the seed() method in Random class
         super().__init__(seed_val)
         self.seed_value = seed_val
         self.max_len = max_len
         self.configs = {}
+        self.max_stride_value = max_stride_val
 
     def gen_config(self, num_levels: int):
+
         if num_levels == 1:
             return [self.max_len]
         elif num_levels == self.max_len:
             return [1] * self.max_len
+
+        # Make sure we have a valid max stride value, one that will allow us to cover max_len bits given our tree height
+        assert (self.max_stride_value >= int(self.max_len / num_levels + 0.5))
 
         config = []
         levels_remaining = num_levels
@@ -180,18 +185,32 @@ class ConfigurationGenerator(random.Random):
         # This often means that the end of the configuration is full of smaller numbers
         # In order to mitigate this effect, we randomize the interval we choose the random number from
         end_range = self.randint(1, end_range)
+        end_range = end_range if end_range <= self.max_stride_value else self.max_stride_value
         bits_to_cover = self.max_len
         while levels_remaining > 0:
             stride = 0
             if levels_remaining > 1:
                 stride = super().randint(1, end_range)
             elif levels_remaining == 1:
-                stride = end_range
+                stride = bits_to_cover
+                if stride > self.max_stride_value:
+                    # Distribute evenly among previous strides
+                    remainder = stride - self.max_stride_value
+                    stride = self.max_stride_value
+                    idx = 0
+                    while remainder > 0:
+                        if idx > len(config) - 1:
+                            idx = 0
+                        config[idx] += 1
+                        remainder -= 1
+                        idx += 1
+
             config.append(stride)
             bits_to_cover -= stride
             levels_remaining -= 1
             end_range = bits_to_cover - levels_remaining + 1
             end_range = self.randint(1, end_range)
+            end_range = end_range if end_range <= self.max_stride_value else self.max_stride_value
         return config
 
     def gen_unique_config(self, num_levels: int, num_configs_per_level: int):
@@ -214,7 +233,7 @@ class ConfigurationGenerator(random.Random):
 
 
 def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: int = 3, max_num_levels: int = 10,
-                           num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0):
+                           num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0, max_stride_val: int = 20):
     # TODO spread out the config to prevent all ones at the end
     json_as_dict = {"benchmark": "ip",
                     "resultFile": "ip32_random_results.csv",
@@ -222,7 +241,7 @@ def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: i
                     "deviceId": 0,
                     "comment": "Random Configs Generated in Python"}
 
-    c = ConfigurationGenerator(seed_val=seed, max_len=max_len)
+    c = ConfigurationGenerator(seed_val=seed, max_len=max_len, max_stride_val=max_stride_val)
     configs = c.gen_configs(min_num_levels, max_num_levels, num_configs_per_level)
     configs_as_list_of_lists = []
     for num_strides in configs.keys():
