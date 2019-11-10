@@ -160,13 +160,14 @@ def get_lengths(prefixes: List[str]):
 
 class ConfigurationGenerator(random.Random):
 
-    def __init__(self, seed_val=0, max_len=32, max_stride_val: int = 22):
+    def __init__(self, seed_val=0, max_len=32, max_stride_val: int = 22, shuffle: bool = False):
         # Using the name seed_value, in order for it not to be confused with the seed() method in Random class
         super().__init__(seed_val)
         self.seed_value = seed_val
         self.max_len = max_len
         self.configs = {}
         self.max_stride_value = max_stride_val
+        self.shuffle = shuffle
 
     def gen_config(self, num_levels: int):
 
@@ -211,6 +212,8 @@ class ConfigurationGenerator(random.Random):
             end_range = bits_to_cover - levels_remaining + 1
             end_range = self.randint(1, end_range)
             end_range = end_range if end_range <= self.max_stride_value else self.max_stride_value
+        if self.shuffle:
+            super().shuffle(config)
         return config
 
     def gen_unique_config(self, num_levels: int, num_configs_per_level: int):
@@ -233,15 +236,16 @@ class ConfigurationGenerator(random.Random):
 
 
 def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: int = 3, max_num_levels: int = 10,
-                           num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0, max_stride_val: int = 20):
+                           num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0, max_stride_val: int = 20, shuffle: bool = False):
+    result_file_name = "ip32_random_shuffled.csv" if shuffle else "ip32_random_results.csv"
     # TODO spread out the config to prevent all ones at the end
     json_as_dict = {"benchmark": "ip",
-                    "resultFile": "ip32_random_results.csv",
+                    "resultFile": result_file_name,
                     "dictionaries": "./../../data/ip/",
                     "deviceId": 0,
                     "comment": "Random Configs Generated in Python"}
 
-    c = ConfigurationGenerator(seed_val=seed, max_len=max_len, max_stride_val=max_stride_val)
+    c = ConfigurationGenerator(seed_val=seed, max_len=max_len, max_stride_val=max_stride_val, shuffle=shuffle)
     configs = c.gen_configs(min_num_levels, max_num_levels, num_configs_per_level)
     configs_as_list_of_lists = []
     for num_strides in configs.keys():
@@ -251,3 +255,7 @@ def random_configs_to_json(filename: str = "ip32_random.json", min_num_levels: i
 
     with open(filename, 'w') as f:
         json.dump(json_as_dict, f)
+
+
+if __name__ == '__main__':
+    random_configs_to_json(filename="ip32_random_shuffled.json", max_num_levels=32, max_stride_val=24, shuffle=True)
