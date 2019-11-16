@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import List, Dict, Tuple
 
 import numpy as np
-
+from copy import deepcopy
 from utils.utils import *
 
 
@@ -383,3 +383,133 @@ def equal_level_strides(prefixes: List[str], num_levels: int):
     for interval in intervals:
         strides.append(interval[1] - interval[0] + 1)
     return strides
+
+
+class ConfigurationGenerator(random.Random):
+
+    def __init__(self, seed_val=0, max_len=32, max_stride_val: int = 22, shuffle: bool = False):
+        # Using the name seed_value, in order for it not to be confused with the seed() method in Random class
+        super().__init__(seed_val)
+        self.seed_value = seed_val
+        self.max_len = max_len
+        self.configs = {}
+        self.max_stride_value = max_stride_val
+        self.shuffle = shuffle
+
+    def gen_config(self, num_levels: int):
+
+        if num_levels == 1:
+            return [self.max_len]
+        elif num_levels == self.max_len:
+            return [1] * self.max_len
+
+        # Make sure we have a valid max stride value, one that will allow us to cover max_len bits given our tree height
+        assert (self.max_stride_value >= int(self.max_len / num_levels + 0.5))
+
+        config = []
+        levels_remaining = num_levels
+        end_range = self.max_len - levels_remaining + 1
+        # The intervals for possible stride values get smaller and smaller
+        # This often means that the end of the configuration is full of smaller numbers
+        # In order to mitigate this effect, we randomize the interval we choose the random number from
+        end_range = self.randint(1, end_range)
+        end_range = end_range if end_range <= self.max_stride_value else self.max_stride_value
+        bits_to_cover = self.max_len
+        while levels_remaining > 0:
+            stride = 0
+            if levels_remaining > 1:
+                stride = super().randint(1, end_range)
+            elif levels_remaining == 1:
+                stride = bits_to_cover
+                if stride > self.max_stride_value:
+                    # Distribute evenly among previous strides
+                    remainder = stride - self.max_stride_value
+                    stride = self.max_stride_value
+                    idx = 0
+                    while remainder > 0:
+                        if idx > len(config) - 1:
+                            idx = 0
+                        config[idx] += 1
+                        remainder -= 1
+                        idx += 1
+
+            config.append(stride)
+            bits_to_cover -= stride
+            levels_remaining -= 1
+            end_range = bits_to_cover - levels_remaining + 1
+            end_range = self.randint(1, end_range)
+            end_range = end_range if end_range <= self.max_stride_value else self.max_stride_value
+        if self.shuffle:
+            super().shuffle(config)
+        return config
+
+    def gen_unique_config(self, num_levels: int, num_configs_per_level: int):
+        if num_levels not in self.configs.keys():
+            self.configs[num_levels] = []
+        for _ in range(num_configs_per_level):
+            attempts = 0
+            config = self.gen_config(num_levels)
+            while config in self.configs[num_levels] and attempts < num_configs_per_level:
+                config = self.gen_config(num_levels)
+                attempts += 1
+            if attempts < num_configs_per_level:
+                self.configs[num_levels].append(config)
+
+    def gen_configs(self, min_num_levels: int, max_num_levels: int, num_configs_per_level: int):
+        self.configs = {}
+        for i in range(min_num_levels, max_num_levels + 1):
+            self.gen_unique_config(i, num_configs_per_level)
+        return self.configs
+
+
+def gen_random_configs(filename: str = "ip32_random.json", min_num_levels: int = 3, max_num_levels: int = 10,
+                           num_configs_per_level: int = 100, max_len: int = 32, seed: int = 0, max_stride_val: int = 20, shuffle: bool = False):
+    result_file_name = "ip32_random_shuffled.csv" if shuffle else "ip32_random_results.csv"
+    c = ConfigurationGenerator(seed_val=seed, max_len=max_len, max_stride_val=max_stride_val, shuffle=shuffle)
+    configs = c.gen_configs(min_num_levels, max_num_levels, num_configs_per_level)
+    configs_as_list_of_lists = []
+    for num_strides in configs.keys():
+        for config in configs[num_strides]:
+            configs_as_list_of_lists.append(config)
+    configs_to_json(filename, result_file_name, configs_as_list_of_lists)
+
+
+if __name__ == '__main__':
+    gen_random_configs(filename="ip32_random_shuffled.json", max_num_levels=32, max_stride_val=24, shuffle=True)
+
+
+class BruteForceConfigGenerator:
+
+    def __init__(self, max_len: int = 32, num_strides: int = 5, max_stride: int = None):
+        self.max_len = max_len
+        self.configs = []
+        self.curr_config = []
+        self.num_strides = num_strides
+        self.max_stride = max_len - num_strides + 2 if max_stride is None else max_stride
+        self.find_all_configs(self.max_len, self.num_strides)
+
+    def find_all_configs(self, n: int, p: int, config: list = None):
+        """
+        :param config: current_config
+        :param n: number that p integers must sum to
+        :param p: number of integers that sum to n
+        """
+
+        if config is None:
+            config = []
+
+        if p == 1:
+            if n <= self.max_stride:
+                self.configs.append(config + [n])
+            else:
+                return
+        else:
+            for i in range(1, min(n - p + 2, self.max_stride + 1)):
+                self.find_all_configs(n - i, p - 1, config + [i])
+
+
+if __name__ == '__main__':
+    t1 = time.time()
+    gen = BruteForceConfigGenerator(32, 5, 24)
+    print('{} Configs found in {:.2f} seconds'.format(len(gen.configs), time.time() - t1))
+    configs_to_json("all_configs_5_strides.json", "all_configs_5_strides.csv", gen.configs)
