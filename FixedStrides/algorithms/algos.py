@@ -480,16 +480,18 @@ if __name__ == '__main__':
 
 class BruteForceConfigGenerator:
 
-    def __init__(self, max_len: int = 32, num_strides: int = 5, max_stride: int = None):
+    def __init__(self, max_len: int = 32, min_num_strides: int = 5, max_num_strides: int = 5, max_stride: int = None):
         self.max_len = max_len
         self.configs = []
         self.curr_config = []
-        self.num_strides = num_strides
-        self.max_stride = max_len - num_strides + 2 if max_stride is None else max_stride
-        self.find_all_configs(self.max_len, self.num_strides)
 
-    def find_all_configs(self, n: int, p: int, config: list = None):
+        for i in range(min_num_strides, max_num_strides + 1):
+            max_stride = max_len - i + 2 if max_stride is None else max_stride
+            self.find_all_configs(self.max_len, i, max_stride)
+
+    def find_all_configs(self, n: int, p: int, max_stride: int, config: list = None):
         """
+        :param max_stride: Maximum value of stride that covers one level of trie
         :param config: current_config
         :param n: number that p integers must sum to
         :param p: number of integers that sum to n
@@ -499,17 +501,17 @@ class BruteForceConfigGenerator:
             config = []
 
         if p == 1:
-            if n <= self.max_stride:
+            if n <= max_stride:
                 self.configs.append(config + [n])
             else:
                 return
         else:
-            for i in range(1, min(n - p + 2, self.max_stride + 1)):
-                self.find_all_configs(n - i, p - 1, config + [i])
+            for i in range(1, min(n - p + 2, max_stride + 1)):
+                self.find_all_configs(n - i, p - 1, max_stride, config + [i])
 
 
 if __name__ == '__main__':
     t1 = time.time()
-    gen = BruteForceConfigGenerator(32, 5, 24)
+    gen = BruteForceConfigGenerator(32, 4, 8, 8)
     print('{} Configs found in {:.2f} seconds'.format(len(gen.configs), time.time() - t1))
-    configs_to_json("all_configs_5_strides.json", "all_configs_5_strides.csv", gen.configs)
+    configs_to_json("all_configs_from_4_to_8_levels_max_8bit.json", "all_configs_from_4_to_8_levels_max_8bit.csv", gen.configs)
