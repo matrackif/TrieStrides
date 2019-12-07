@@ -509,9 +509,44 @@ class BruteForceConfigGenerator:
             for i in range(1, min(n - p + 2, max_stride + 1)):
                 self.find_all_configs(n - i, p - 1, max_stride, config + [i])
 
+class AllConfigGeneratorDynamic:
+
+    def __init__(self, max_len: int = 32, num_levels: int = 5):
+        self.max_len = max_len
+        self.configs = []
+        self.curr_config = []
+        self.chosen_configs = [[]]
+        self.bits_covered = []
+        self.find_all_configs(max_len, num_levels)
+        # for i in range(min_num_strides, max_num_strides + 1):
+        #     max_stride = max_len - i + 2 if max_stride is None else max_stride
+        #     self.find_all_configs(self.max_len, i, max_stride)
+
+    def find_all_configs(self, n: int, p: int):
+        """
+        :param max_stride: Maximum value of stride that covers one level of trie
+        :param config: current_config
+        :param n: number that p integers must sum to
+        :param p: number of integers that sum to n
+        """
+        self.chosen_configs[0] = [[x] for x in range(1, n - p + 2)]
+        # self.bits_covered = [x for x in range(n - p + 1, -1, -1)]
+        # self.bits_covered = [x for x in range(n - p + 2)]
+        for lvl in range(1, p):
+            self.chosen_configs.append([])
+            for config in self.chosen_configs[lvl - 1]:
+                min_range = 1 if lvl < p - 1 else n - sum(config) - (p - lvl) + 1
+                for stride in range(min_range, n - sum(config) - (p - lvl) + 2):
+                    self.chosen_configs[lvl].append(config + [stride])
 
 if __name__ == '__main__':
     t1 = time.time()
-    gen = BruteForceConfigGenerator(32, 4, 8, 8)
+    gen = BruteForceConfigGenerator(32, 8, 8)
     print('{} Configs found in {:.2f} seconds'.format(len(gen.configs), time.time() - t1))
-    configs_to_json("all_configs_from_4_to_8_levels_max_8bit.json", "all_configs_from_4_to_8_levels_max_8bit.csv", gen.configs)
+    #configs_to_json("all_configs_from_4_to_8_levels_max_8bit.json", "all_configs_from_4_to_8_levels_max_8bit.csv", gen.configs)
+
+    #######
+    t1 = time.time()
+    gen = AllConfigGeneratorDynamic(32, 8)
+    print('{} Configs found in {:.2f} seconds'.format(len(gen.chosen_configs[-1]), time.time() - t1))
+    pass
