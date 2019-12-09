@@ -72,8 +72,8 @@ if __name__ == '__main__':
     # test_2 = ['0', '0', '0', '0', '11', '11', '11', '11', '111', '111', '111', '111']
     # run_algo_3(['1', '1', '1', '1', '1', '1', '1', '11111111'], 4)
     prefixes = utils.get_prefixes_from_file(file_name=args['file'])
-    run_algo(prefixes)
-
+    # run_algo(prefixes)
+    run_algo_2(prefixes, 2)
     # algos.equal_level_strides(prefixes, 4)
     # run_algo(prefixes)
     # run_algo_2(prefixes)

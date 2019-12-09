@@ -89,7 +89,6 @@ def get_node_counts2(prefixes: List[str]):
 
 def fixed_strides(prefixes: List[str], k: int = None):
     max_len = max(len(p) for p in prefixes)
-    # k = max_len
     c = {}
     m = {}
     nodes = get_node_counts(prefixes)
@@ -102,25 +101,18 @@ def fixed_strides(prefixes: List[str], k: int = None):
         c[i] = [(2 ** (i + 1)) if j == 1 else 0 for j in range(max_len + 1)]
         m[i] = [-1 if j == 1 else 0 for j in range(max_len + 1)]
 
-    print_d('nodes: ' + str(nodes) + ' c:' + str(c) + '\n' ' m:' + str(m))
     for j in range(1, max_len):
         for r in range(2, k + 1):
             min_j = max(m[j - 1][r], m[j][r - 1])
-            print_d('m: ' + str(m) + 'min_j: ' + str(min_j))
-            print_d('c: ' + str(c))
             min_cost = c[j][r - 1]
             min_l = m[j][r - 1]
             for z in range(min_j, j):
-                print_d('r: ' + str(r) + ' j: ' + str(j) + ' z: ' + str(z))
                 cost = c[z][j - 1] + (nodes[z + 1] * (2 ** (j - z)))
                 if cost < min_cost:
-                    # print('New min cost found, r:', r, 'j:', j, 'z:', z, 'old cost:', min_cost, 'new cost:', cost)
                     min_cost = cost
                     min_l = z
             c[j][r] = min_cost
             m[j][r] = min_l
-    print_d('------------------------')
-    print_d('c:' + str(c) + '\n' ' m:' + str(m))
     ############################################
 
     strides = []
@@ -128,14 +120,12 @@ def fixed_strides(prefixes: List[str], k: int = None):
     tmp_k = k
     while levels_to_cover >= 0:
         min_m = m[levels_to_cover][tmp_k]
-        # tmp += c[levels_to_cover][levels_to_cover + 1]
         stride = levels_to_cover - min_m
         tmp_k -= stride
         levels_to_cover -= stride
         strides.append(stride)
 
     strides = strides[-1::-1]  # reverse strides array
-    # print('c[max_len - 1][max_len]:', c[max_len - 1][max_len])
     return strides, nodes
 
 
@@ -530,12 +520,14 @@ class AllConfigGeneratorDynamic:
         :param p: number of integers that sum to n
         """
         self.chosen_configs[0] = [[x] for x in range(1, n - p + 2)]
-        # self.bits_covered = [x for x in range(n - p + 1, -1, -1)]
-        # self.bits_covered = [x for x in range(n - p + 2)]
+        # For each level
         for lvl in range(1, p):
             self.chosen_configs.append([])
+            # For each configuration generated in the previous level
             for config in self.chosen_configs[lvl - 1]:
                 min_range = 1 if lvl < p - 1 else n - sum(config) - (p - lvl) + 1
+                # Calculate all valid strides the configuration based on the amount of previous levels,
+                # and the amount of bits covered so far
                 for stride in range(min_range, n - sum(config) - (p - lvl) + 2):
                     self.chosen_configs[lvl].append(config + [stride])
 
