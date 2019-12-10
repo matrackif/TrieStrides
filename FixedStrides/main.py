@@ -77,3 +77,9 @@ if __name__ == '__main__':
     # algos.equal_level_strides(prefixes, 4)
     # run_algo(prefixes)
     # run_algo_2(prefixes)
+
+    """
+    Node count below are from real 1-bit Flavors Trie from Tokyo dataset
+    """
+    # strides, nodes = algos.fixed_strides(prefixes, None, [1, 2, 4, 8, 14, 25, 32, 38, 41, 52, 70, 107, 166, 260, 407, 631, 945, 1320, 1931, 3001, 5078, 9187, 17394, 33779, 1559, 1017, 442, 63, 46, 30, 21, 21])
+    # strides2, nodes2 = algos.fixed_strides_2([], 5, [1, 2, 4, 8, 14, 25, 32, 38, 41, 52, 70, 107, 166, 260, 407, 631, 945, 1320, 1931, 3001, 5078, 9187, 17394, 33779, 1559, 1017, 442, 63, 46, 30, 21, 21])

@@ -87,11 +87,11 @@ def get_node_counts2(prefixes: List[str]):
 #     return strides, nodes
 
 
-def fixed_strides(prefixes: List[str], k: int = None):
+def fixed_strides(prefixes: List[str], k: int = None, node_count: List[int] = None):
     max_len = max(len(p) for p in prefixes)
     c = {}
     m = {}
-    nodes = get_node_counts(prefixes)
+    nodes = get_node_counts(prefixes) if node_count is None else node_count
 
     if k is None:
         k = max_len
@@ -212,9 +212,9 @@ def fixed_strides_2_impl(c: Dict[Tuple, int], m: Dict[Tuple, int], s: int, f: in
 
 
 # Algorithms from Efficient Construction of Pipelined Multibit-Trie Router-Tables by Kun Suk Kim & Sartaj Sahni 2007
-def fixed_strides_2(prefixes: List[str], num_levels: int = 0):
+def fixed_strides_2(prefixes: List[str], num_levels: int = 0, node_count: List[int] = None):
 
-    nodes = get_node_counts(prefixes)
+    nodes = get_node_counts(prefixes) if node_count is None else node_count
     find_min_cost_tree = False
     if num_levels is None or num_levels == 0:
         num_levels = len(nodes)
